@@ -23,7 +23,7 @@ public class WeatherActivity extends Activity {
     ConnectIQ.ConnectIQListener listener = new ConnectIQ.ConnectIQListener() {
         @Override
         public void onSdkReady() {
-                    
+
         }
 
         @Override
@@ -39,6 +39,9 @@ public class WeatherActivity extends Activity {
 
     @Override
     public void onCreate(Bundle savedInstance){
+        super.onCreate(savedInstance);
+        setContentView(R.layout.main);
+
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         LocationListener locationListener = new LocationListener() {
             @Override
