@@ -6,6 +6,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import com.garmin.android.connectiq.ConnectIQ;
 import com.garmin.android.connectiq.IQApp;
 import com.garmin.android.connectiq.IQDevice;
@@ -65,9 +67,24 @@ public class WeatherActivity extends Activity {
             }
         };
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+
+        Button connect = (Button)findViewById(R.id.connectButton);
+        connect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
     }
 
     private void sendToWxUpdateToGarmin(Location location) {
+        GetWeatherTask asyncTask = new GetWeatherTask() {
+            @Override
+            protected void onPostExecute(String jsonString) {
+                super.onPostExecute(jsonString);
 
+                // Send JSON string to Garmin device.
+            }
+        };
     }
 }
