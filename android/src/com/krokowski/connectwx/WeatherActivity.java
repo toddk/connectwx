@@ -83,6 +83,7 @@ public class WeatherActivity extends Activity {
             protected void onPostExecute(String jsonString) {
                 super.onPostExecute(jsonString);
 
+                // TODO: strip out details in JSON that are irrelevant before sending
                 // Send JSON string to Garmin device.
             }
         };
