@@ -2,15 +2,19 @@ package com.krokowski.connectwx;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import com.garmin.android.connectiq.ConnectIQ;
 import com.garmin.android.connectiq.IQApp;
 import com.garmin.android.connectiq.IQDevice;
+import com.garmin.android.connectiq.exception.ServiceUnavailableException;
 
 import java.util.List;
 
@@ -25,14 +29,28 @@ public class WeatherActivity extends Activity {
     private IQDevice device;
     private IQApp app;
 
+    private TextView connectStatus;
+
+    private static final String TAG = WeatherActivity.class.getSimpleName();
+
     ConnectIQ.ConnectIQListener listener = new ConnectIQ.ConnectIQListener() {
         @Override
         public void onSdkReady() {
             List<IQDevice> deviceList = connectIq.getAvailableDevices();
 
-            for (IQDevice device : deviceList) {
-                connectIq.registerForEvents(device, eventListener, app, appEventListener);
+            try {
+                for (IQDevice device : deviceList) {
+                    connectIq.registerForEvents(device, eventListener, app, appEventListener);
+
+                    IQDevice.IQDeviceStatus status = connectIq.getStatus(device);
+                    updateStatus(status);
+                }
+            } catch(IllegalStateException ise) {
+                Log.e(TAG, "Device connection error", ise);
+            } catch(ServiceUnavailableException sue) {
+                Log.e(TAG, "Device unavailable", sue);
             }
+
         }
 
         @Override
@@ -42,21 +60,22 @@ public class WeatherActivity extends Activity {
 
         @Override
         public void onSdkShutDown() {
-
+            connectStatus.setText("Shutting down");
+            connectStatus.setTextColor(Color.RED);
         }
     };
 
     ConnectIQ.IQDeviceEventListener eventListener = new ConnectIQ.IQDeviceEventListener() {
         @Override
         public void onDeviceStatusChanged(IQDevice iqDevice, IQDevice.IQDeviceStatus iqDeviceStatus) {
-
+            updateStatus(iqDeviceStatus);
         }
     };
 
     ConnectIQ.IQApplicationEventListener appEventListener = new ConnectIQ.IQApplicationEventListener() {
         @Override
         public void onMessageReceived(IQDevice iqDevice, IQApp iqApp, List<Object> list, ConnectIQ.IQMessageStatus iqMessageStatus) {
-
+            // data coming from garmin device
         }
     };
 
@@ -64,6 +83,8 @@ public class WeatherActivity extends Activity {
     public void onCreate(Bundle savedInstance){
         super.onCreate(savedInstance);
         setContentView(R.layout.main);
+
+        connectStatus = (TextView)findViewById(R.id.connectStatus);
 
         // Get an instance of ConnectIQ that does BLE simulation over ADB to the simulator.
         connectIq = ConnectIQ.getInstance(ConnectIQ.IQCommProtocol.SIMULATED_BLE);
@@ -100,6 +121,27 @@ public class WeatherActivity extends Activity {
 
             }
         });
+    }
+
+    private void updateStatus(IQDevice.IQDeviceStatus status) {
+        switch(status) {
+            case CONNECTED:
+                connectStatus.setText("Connected");
+                connectStatus.setTextColor(Color.GREEN);
+                break;
+            case NOT_CONNECTED:
+                connectStatus.setText("Not Connected");
+                connectStatus.setTextColor(Color.RED);
+                break;
+            case NOT_PAIRED:
+                connectStatus.setText("Not Connected");
+                connectStatus.setTextColor(Color.RED);
+                break;
+            case UNKNOWN:
+                connectStatus.setText("Unknown");
+                connectStatus.setTextColor(Color.RED);
+                break;
+        }
     }
 
     private void sendToWxUpdateToGarmin(Location location) {
