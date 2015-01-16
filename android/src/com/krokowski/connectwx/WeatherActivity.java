@@ -12,6 +12,8 @@ import com.garmin.android.connectiq.ConnectIQ;
 import com.garmin.android.connectiq.IQApp;
 import com.garmin.android.connectiq.IQDevice;
 
+import java.util.List;
+
 /**
  * Created by todd on 1/14/15.
  */
@@ -19,13 +21,18 @@ public class WeatherActivity extends Activity {
 
     private LocationManager locationManager;
 
+    private ConnectIQ connectIq;
     private IQDevice device;
     private IQApp app;
 
     ConnectIQ.ConnectIQListener listener = new ConnectIQ.ConnectIQListener() {
         @Override
         public void onSdkReady() {
+            List<IQDevice> deviceList = connectIq.getAvailableDevices();
 
+            for (IQDevice device : deviceList) {
+                connectIq.registerForEvents(device, eventListener, app, appEventListener);
+            }
         }
 
         @Override
@@ -39,10 +46,28 @@ public class WeatherActivity extends Activity {
         }
     };
 
+    ConnectIQ.IQDeviceEventListener eventListener = new ConnectIQ.IQDeviceEventListener() {
+        @Override
+        public void onDeviceStatusChanged(IQDevice iqDevice, IQDevice.IQDeviceStatus iqDeviceStatus) {
+
+        }
+    };
+
+    ConnectIQ.IQApplicationEventListener appEventListener = new ConnectIQ.IQApplicationEventListener() {
+        @Override
+        public void onMessageReceived(IQDevice iqDevice, IQApp iqApp, List<Object> list, ConnectIQ.IQMessageStatus iqMessageStatus) {
+
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstance){
         super.onCreate(savedInstance);
         setContentView(R.layout.main);
+
+        // Get an instance of ConnectIQ that does BLE simulation over ADB to the simulator.
+        connectIq = ConnectIQ.getInstance(ConnectIQ.IQCommProtocol.SIMULATED_BLE);
+        app = new IQApp("", "ConnectWx App", 1);
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         LocationListener locationListener = new LocationListener() {
