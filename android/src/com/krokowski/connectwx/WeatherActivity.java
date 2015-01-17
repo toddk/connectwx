@@ -184,5 +184,7 @@ public class WeatherActivity extends Activity {
                 // Send JSON string to Garmin device.
             }
         };
+
+        asyncTask.execute(location);
     }
 }
