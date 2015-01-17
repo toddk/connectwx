@@ -88,6 +88,8 @@ public class WeatherActivity extends Activity {
 
         // Get an instance of ConnectIQ that does BLE simulation over ADB to the simulator.
         connectIq = ConnectIQ.getInstance(ConnectIQ.IQCommProtocol.SIMULATED_BLE);
+        connectIq.setAdbPort(7381);
+
         app = new IQApp("", "ConnectWx App", 1);
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -121,6 +123,34 @@ public class WeatherActivity extends Activity {
 
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        connectIq.initialize(this, true, listener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        /**
+         * Shutdown the SDK so resources and listeners can be released.
+         */
+        if (isFinishing()) {
+            connectIq.shutdown();
+        } else {
+            /**
+             * Unregister for all events.  This is good practice to clean up to
+             * allow the SDK to free resources and not listen for events that
+             * no one is interested in.
+             *
+             * We do not call this if we are shutting down because the shutdown
+             * method will call this for us during the clean up process.
+             */
+            connectIq.unregisterAllForEvents();
+        }
     }
 
     private void updateStatus(IQDevice.IQDeviceStatus status) {
