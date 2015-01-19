@@ -7,6 +7,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -15,8 +16,12 @@ import com.garmin.android.connectiq.ConnectIQ;
 import com.garmin.android.connectiq.IQApp;
 import com.garmin.android.connectiq.IQDevice;
 import com.garmin.android.connectiq.exception.ServiceUnavailableException;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by todd on 1/14/15.
@@ -35,15 +40,18 @@ public class WeatherActivity extends Activity {
 
     private List<IQDevice> deviceList;
 
+
+
     ConnectIQ.ConnectIQListener listener = new ConnectIQ.ConnectIQListener() {
         @Override
         public void onSdkReady() {
+            Log.d(TAG, "ConnectIQ SDK is ready");
             initDevices();
         }
 
         @Override
         public void onInitializeError(ConnectIQ.IQSdkErrorStatus iqSdkErrorStatus) {
-
+            Log.d(TAG, "Error initializing SDK " + iqSdkErrorStatus.toString());
         }
 
         @Override
@@ -76,7 +84,6 @@ public class WeatherActivity extends Activity {
 
         // Get an instance of ConnectIQ that does BLE simulation over ADB to the simulator.
         connectIq = ConnectIQ.getInstance(ConnectIQ.IQCommProtocol.SIMULATED_BLE);
-        connectIq.setAdbPort(7381);
 
         app = new IQApp("", "ConnectWx App", 1);
 
@@ -89,7 +96,7 @@ public class WeatherActivity extends Activity {
 
             @Override
             public void onStatusChanged(String provider, int status, Bundle extras) {
-
+                Log.d(TAG, "Location status changed " + status + " provider " + provider);
             }
 
             @Override
@@ -99,7 +106,7 @@ public class WeatherActivity extends Activity {
 
             @Override
             public void onProviderDisabled(String provider) {
-
+                Log.w(TAG, "Location provider is disabled");
             }
         };
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
@@ -142,6 +149,7 @@ public class WeatherActivity extends Activity {
     }
 
     private void updateStatus(IQDevice.IQDeviceStatus status) {
+        Log.d(TAG, "Updating TextView status");
         switch(status) {
             case CONNECTED:
                 connectStatus.setText("Connected");
@@ -163,23 +171,47 @@ public class WeatherActivity extends Activity {
     }
 
     private void sendToWxUpdateToGarmin(Location location) {
-        GetWeatherTask asyncTask = new GetWeatherTask() {
+
+        final Handler handler = new Handler();
+        Timer timer = new Timer();
+        TimerTask doAsynchronousTask = new TimerTask() {
             @Override
-            protected void onPostExecute(String jsonString) {
-                super.onPostExecute(jsonString);
+            public void run() {
+                handler.post(new Runnable() {
+                    public void run() {
+                        try {
+                            GetWeatherTask asyncTask = new GetWeatherTask() {
+                                @Override
+                                protected void onPostExecute(JSONObject json) {
+                                    super.onPostExecute(json);
 
-                if(deviceList == null || deviceList.size() == 0)
-                    initDevices();
 
-                // TODO: strip out details in JSON that are irrelevant before sending
-                // Send JSON string to Garmin device.
-                for (IQDevice device : deviceList) {
-                    connectIq.sendMessage(device, app, jsonString);
-                }
+                                    // Send JSON string to Garmin device.
+                                    try {
+                                        for (IQDevice device : deviceList) {
+                                            Log.d(TAG, "Sending to device " + device.getFriendlyName());
+                                            String description = ((JSONObject)json.getJSONArray("weather").get(0)).getString("description");
+                                            String location = json.getString("name");
+                                            connectIq.sendMessage(device, app, description + "," + location);
+                                        }
+                                    } catch(JSONException je) {
+                                        Log.e(TAG, "Could not parse JSON " + json.toString(), je);
+                                    }
+                                }
+                            };
+
+                            if(deviceList == null || deviceList.size() == 0)
+                                initDevices();
+
+                            asyncTask.execute();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error scheduling JSON fetch for wx data", e);
+                        }
+                    }
+                });
             }
         };
-
-        asyncTask.execute(location);
+        timer.schedule(doAsynchronousTask, 0, 50000); //execute in every 50000 ms
     }
 
     private void initDevices() {
@@ -187,6 +219,7 @@ public class WeatherActivity extends Activity {
 
         try {
             for (IQDevice device : deviceList) {
+                Log.d(TAG, "Found device " + device.getFriendlyName() + " and registering for events");
                 connectIq.registerForEvents(device, eventListener, app, appEventListener);
 
                 IQDevice.IQDeviceStatus status = connectIq.getStatus(device);

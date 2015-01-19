@@ -2,11 +2,25 @@ using Toybox.Application as App;
 using Toybox.WatchUi as Ui;
 using Toybox.System as Sys;
 using Toybox.Communications as Comm;
+using Toybox.Graphics as Gfx;
+
+var descString = "Weather Description";
+var locationString = "Location";
 
 class BaseView extends Ui.View {
 
 	function initialize() {
 		Comm.setMailboxListener( method(:onMail) );
+	}
+	
+	function onUpdate(dc) {
+		dc.setColor( Gfx.COLOR_TRANSPARENT, Gfx.COLOR_BLACK );
+        dc.clear();
+        dc.setColor( Gfx.COLOR_WHITE, Gfx.COLOR_TRANSPARENT );
+	
+		
+		dc.drawText(10, 80, Gfx.FONT_SMALL, locationString, Gfx.TEXT_JUSTIFY_LEFT);
+		dc.drawText(10, 110, Gfx.FONT_SMALL, descString, Gfx.TEXT_JUSTIFY_LEFT);
 	}
 	
 	function onMail(mailIter) {
@@ -16,6 +30,9 @@ class BaseView extends Ui.View {
 		
 		while(mail != null) {
 			Sys.println(mail);
+			
+			descString = mail.substring(0,mail.find(","));
+			locationString = mail.substring(mail.find(",") + 1, mail.length());
 			
 			mail = mailIter.next();
 		}
