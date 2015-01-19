@@ -33,24 +33,12 @@ public class WeatherActivity extends Activity {
 
     private static final String TAG = WeatherActivity.class.getSimpleName();
 
+    private List<IQDevice> deviceList;
+
     ConnectIQ.ConnectIQListener listener = new ConnectIQ.ConnectIQListener() {
         @Override
         public void onSdkReady() {
-            List<IQDevice> deviceList = connectIq.getAvailableDevices();
-
-            try {
-                for (IQDevice device : deviceList) {
-                    connectIq.registerForEvents(device, eventListener, app, appEventListener);
-
-                    IQDevice.IQDeviceStatus status = connectIq.getStatus(device);
-                    updateStatus(status);
-                }
-            } catch(IllegalStateException ise) {
-                Log.e(TAG, "Device connection error", ise);
-            } catch(ServiceUnavailableException sue) {
-                Log.e(TAG, "Device unavailable", sue);
-            }
-
+            initDevices();
         }
 
         @Override
@@ -180,11 +168,34 @@ public class WeatherActivity extends Activity {
             protected void onPostExecute(String jsonString) {
                 super.onPostExecute(jsonString);
 
+                if(deviceList == null || deviceList.size() == 0)
+                    initDevices();
+
                 // TODO: strip out details in JSON that are irrelevant before sending
                 // Send JSON string to Garmin device.
+                for (IQDevice device : deviceList) {
+                    connectIq.sendMessage(device, app, jsonString);
+                }
             }
         };
 
         asyncTask.execute(location);
+    }
+
+    private void initDevices() {
+        deviceList = connectIq.getAvailableDevices();
+
+        try {
+            for (IQDevice device : deviceList) {
+                connectIq.registerForEvents(device, eventListener, app, appEventListener);
+
+                IQDevice.IQDeviceStatus status = connectIq.getStatus(device);
+                updateStatus(status);
+            }
+        } catch(IllegalStateException ise) {
+            Log.e(TAG, "Device connection error", ise);
+        } catch(ServiceUnavailableException sue) {
+            Log.e(TAG, "Device unavailable", sue);
+        }
     }
 }

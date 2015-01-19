@@ -3,6 +3,8 @@ using Toybox.Graphics as Gfx;
 using Toybox.System as Sys;
 using Toybox.Lang as Lang;
 
+
+
 class garminView extends Ui.WatchFace {
 
     //! Load your resources here
