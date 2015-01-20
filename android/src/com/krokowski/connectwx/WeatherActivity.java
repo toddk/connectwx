@@ -19,6 +19,8 @@ import com.garmin.android.connectiq.exception.ServiceUnavailableException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,6 +36,9 @@ public class WeatherActivity extends Activity {
     private IQDevice device;
     private IQApp app;
 
+    private TextView description;
+    private TextView location;
+    private TextView lastUpdate;
     private TextView connectStatus;
 
     private static final String TAG = WeatherActivity.class.getSimpleName();
@@ -80,6 +85,9 @@ public class WeatherActivity extends Activity {
         super.onCreate(savedInstance);
         setContentView(R.layout.main);
 
+        description = (TextView) findViewById(R.id.description);
+        location = (TextView) findViewById(R.id.location);
+        lastUpdate = (TextView) findViewById(R.id.lastUpdate);
         connectStatus = (TextView)findViewById(R.id.connectStatus);
 
         // Get an instance of ConnectIQ that does BLE simulation over ADB to the simulator.
@@ -111,13 +119,6 @@ public class WeatherActivity extends Activity {
         };
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
-        Button connect = (Button)findViewById(R.id.connectButton);
-        connect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
     }
 
     @Override
@@ -170,7 +171,7 @@ public class WeatherActivity extends Activity {
         }
     }
 
-    private void sendToWxUpdateToGarmin(Location location) {
+    private void sendToWxUpdateToGarmin(final Location location) {
 
         final Handler handler = new Handler();
         Timer timer = new Timer();
@@ -184,15 +185,23 @@ public class WeatherActivity extends Activity {
                                 @Override
                                 protected void onPostExecute(JSONObject json) {
                                     super.onPostExecute(json);
-
+                                    if (json == null)
+                                        return;
 
                                     // Send JSON string to Garmin device.
                                     try {
                                         for (IQDevice device : deviceList) {
                                             Log.d(TAG, "Sending to device " + device.getFriendlyName());
-                                            String description = ((JSONObject)json.getJSONArray("weather").get(0)).getString("description");
-                                            String location = json.getString("name");
-                                            connectIq.sendMessage(device, app, description + "," + location);
+                                            String descriptionStr = ((JSONObject)json.getJSONArray("weather").get(0)).getString("description");
+                                            String locationStr = json.getString("name");
+
+                                            String dateTimeStr = DateFormat.getDateTimeInstance().format(new Date());
+
+                                            WeatherActivity.this.location.setText(locationStr);
+                                            WeatherActivity.this.description.setText(descriptionStr);
+                                            WeatherActivity.this.lastUpdate.setText(dateTimeStr);
+
+                                            connectIq.sendMessage(device, app, descriptionStr + "," + locationStr);
                                         }
                                     } catch(JSONException je) {
                                         Log.e(TAG, "Could not parse JSON " + json.toString(), je);
@@ -203,7 +212,7 @@ public class WeatherActivity extends Activity {
                             if(deviceList == null || deviceList.size() == 0)
                                 initDevices();
 
-                            asyncTask.execute();
+                            asyncTask.execute(location);
                         } catch (Exception e) {
                             Log.e(TAG, "Error scheduling JSON fetch for wx data", e);
                         }

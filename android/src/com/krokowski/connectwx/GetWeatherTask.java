@@ -24,8 +24,12 @@ public class GetWeatherTask extends AsyncTask<Location,Void,JSONObject> {
 
     @Override
     protected JSONObject doInBackground(Location... params) {
+        if (params == null || params[0] == null)
+            return null;
+
         // code adapted from: http://www.vogella.com/tutorials/AndroidJSON/article.html
         StringBuilder builder = new StringBuilder();
+
         double lat = params[0].getLatitude();
         double lon = params[0].getLongitude();
 
