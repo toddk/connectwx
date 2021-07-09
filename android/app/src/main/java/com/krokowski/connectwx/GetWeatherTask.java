@@ -21,6 +21,11 @@ import java.io.InputStreamReader;
 public class GetWeatherTask extends AsyncTask<Location,Void,JSONObject> {
 
     private static final String BASE_URL =  "http://api.openweathermap.org/data/2.5/weather";
+    private final String openweatherApiKey;
+
+    public GetWeatherTask(String openweatherApiKey) {
+        this.openweatherApiKey = openweatherApiKey;
+    }
 
     @Override
     protected JSONObject doInBackground(Location... params) {
@@ -35,7 +40,7 @@ public class GetWeatherTask extends AsyncTask<Location,Void,JSONObject> {
 
         HttpClient client = new DefaultHttpClient();
 
-        HttpGet get = new HttpGet(BASE_URL + "?lat=" + lat + "&lon=" + lon);
+        HttpGet get = new HttpGet(BASE_URL + "?lat=" + lat + "&lon=" + lon + "&appid=" + openweatherApiKey);
         JSONObject ret = null;
 
         try {
