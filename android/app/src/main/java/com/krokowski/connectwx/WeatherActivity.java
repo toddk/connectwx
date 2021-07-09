@@ -45,7 +45,7 @@ public class WeatherActivity extends Activity {
 
     private List<IQDevice> deviceList;
 
-
+    String openweatherApiKey;
 
     ConnectIQ.ConnectIQListener listener = new ConnectIQ.ConnectIQListener() {
         @Override
@@ -94,6 +94,8 @@ public class WeatherActivity extends Activity {
         connectIq = ConnectIQ.getInstance(ConnectIQ.IQCommProtocol.SIMULATED_BLE);
 
         app = new IQApp("", "ConnectWx App", 1);
+
+        openweatherApiKey = getString(R.string.org_openweathermap_api_key);
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         LocationListener locationListener = new LocationListener() {
@@ -181,7 +183,7 @@ public class WeatherActivity extends Activity {
                 handler.post(new Runnable() {
                     public void run() {
                         try {
-                            GetWeatherTask asyncTask = new GetWeatherTask() {
+                            GetWeatherTask asyncTask = new GetWeatherTask(openweatherApiKey) {
                                 @Override
                                 protected void onPostExecute(JSONObject json) {
                                     super.onPostExecute(json);

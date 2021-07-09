@@ -10,6 +10,7 @@ var locationString = "Location";
 class BaseView extends Ui.View {
 
 	function initialize() {
+		View.initialize();
 		Comm.setMailboxListener( method(:onMail) );
 	}
 	
@@ -43,7 +44,11 @@ class BaseView extends Ui.View {
 }
 
 class CommsListener extends Comm.ConnectionListener {
-	
+
+	function initialize() {
+		ConnectionListener.initialize();
+	}
+
 	function onComplete() {
 		Sys.println("transmit complete");
 	}
@@ -55,12 +60,16 @@ class CommsListener extends Comm.ConnectionListener {
 
 class garminApp extends App.AppBase {
 
+	function initialize() {
+		AppBase.initialize();
+	}
+
     //! onStart() is called on application start up
-    function onStart() {
+    function onStart(state) {
     }
 
     //! onStop() is called when your application is exiting
-    function onStop() {
+    function onStop(state) {
     }
 
     //! Return the initial view of your application here
